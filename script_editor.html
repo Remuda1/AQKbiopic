@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .textarea-container {
+            display: flex;
+            position: relative;
+        }
+        .line-numbers {
+            background-color: #e5e7eb;
+            color: #6b7280;
+            padding: 1rem 0.5rem;
+            text-align: right;
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+            font-size: 0.875rem;
+            user-select: none;
+            overflow-y: hidden;
+            flex-shrink: 0;
+            line-height: 1.5rem; /* Match textarea line-height */
+        }
+        textarea {
+            flex-grow: 1;
+            padding: 1rem;
+            line-height: 1.5rem; /* Match line-numbers line-height */
+            white-space: pre-wrap; /* Preserve line breaks */
+            word-wrap: break-word; /* Wrap long words */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <!-- Main Container -->
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-10 border border-gray-200">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Script Editor</h1>
+            <div class="flex items-center space-x-2">
+                <div id="statusMessage" class="text-sm font-medium text-green-600 transition-opacity duration-300 opacity-0"></div>
+                <button id="submitButton" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium shadow-md hover:bg-indigo-700 transition-colors duration-300">
+                    Submit Script
+                </button>
+            </div>
+        </div>
+        
+        <!-- Submission Instructions -->
+        <div class="bg-gray-50 p-6 rounded-lg mb-8 border border-gray-200">
+            <p class="text-gray-800 font-semibold mb-2">Instructions for Your Script Submission</p>
+            <p class="text-gray-600 mb-4">
+                We are seeking scripts for a biopic about Dr. Abdul Qadeer Khan (A. Q. Khan) of Pakistan, inspired by the style and thematic depth of Christopher Nolan's *Oppenheimer*. We encourage you to craft a narrative that delves into the historical context, human values, and artistic merit of his story. Focus on themes of the human spirit, scientific pursuit, and the complex motivations behind his work, all while maintaining a respectful and thoughtful touch of nationalism.
+            </p>
+            <p class="text-gray-600 mb-2">
+                For those new to screenwriting, a few pointers:
+            </p>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                <li><span class="font-medium text-gray-700">DO</span> use a standard script format: character names in all caps, followed by dialogue. Use brief descriptions for actions and settings.</li>
+                <li><span class="font-medium text-gray-700">DO</span> focus on showing, not telling. Instead of saying a character is angry, describe their actions (e.g., "He slams his fist on the table.").</li>
+                <li><span class="font-medium text-gray-700">DON'T</span> include camera directions or elaborate scene descriptions. Keep the focus on what the audience would see and hear.</li>
+                <li><span class="font-medium text-gray-700">DON'T</span> use overly long paragraphs. A script is a lean, visual document.</li>
+            </ul>
+        </div>
+
+        <!-- User Info Form -->
+        <div class="mb-8">
+            <p class="text-gray-600 mb-4">
+                Enter your information below. It will be saved with your script upon submission.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <input type="text" id="userName" placeholder="Your Name" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300">
+                <input type="email" id="userEmail" placeholder="Your Email" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300">
+                <input type="tel" id="userPhone" placeholder="Phone Number" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300">
+            </div>
+        </div>
+
+        <p class="text-gray-600 mb-6">
+            Paste your script below. The line numbers will automatically update.
+        </p>
+
+        <!-- Editor Area -->
+        <div class="textarea-container rounded-lg border border-gray-300 overflow-hidden shadow-sm">
+            <div id="lineNumbers" class="line-numbers"></div>
+            <textarea
+                id="scriptEditor"
+                rows="20"
+                class="w-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300 resize-none"
+                placeholder="Start typing or paste your script here..."
+            ></textarea>
+        </div>
+
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let auth;
+        let userId;
+
+        const scriptEditor = document.getElementById('scriptEditor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const submitButton = document.getElementById('submitButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const userNameInput = document.getElementById('userName');
+        const userEmailInput = document.getElementById('userEmail');
+        const userPhoneInput = document.getElementById('userPhone');
+
+        // Function to update line numbers
+        const updateLineNumbers = () => {
+            const text = scriptEditor.value;
+            const lines = text.split('\n');
+            let numbers = '';
+            for (let i = 1; i <= lines.length; i++) {
+                numbers += i + '<br>';
+            }
+            lineNumbers.innerHTML = numbers;
+            lineNumbers.scrollTop = scriptEditor.scrollTop;
+        };
+
+        // Function to show a temporary status message
+        const showStatusMessage = (message, isError = false) => {
+            statusMessage.textContent = message;
+            if (isError) {
+                statusMessage.classList.remove('text-green-600');
+                statusMessage.classList.add('text-red-600');
+            } else {
+                statusMessage.classList.remove('text-red-600');
+                statusMessage.classList.add('text-green-600');
+            }
+            statusMessage.classList.add('opacity-100');
+            setTimeout(() => {
+                statusMessage.classList.remove('opacity-100');
+            }, 3000);
+        };
+
+        // Initialize Firebase and authenticate
+        const initializeFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = auth.currentUser.uid;
+                
+                // Set up real-time listener for the user's previously submitted script
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId);
+                onSnapshot(userDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.script) {
+                             scriptEditor.value = data.script.content || '';
+                             userNameInput.value = data.script.name || '';
+                             userEmailInput.value = data.script.email || '';
+                             userPhoneInput.value = data.script.phone || '';
+                        }
+                    }
+                    updateLineNumbers();
+                });
+                
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                showStatusMessage('Error initializing app.', true);
+            }
+        };
+
+        const submitScript = async () => {
+            if (!userId) {
+                showStatusMessage('App not ready. Please wait.', true);
+                return;
+            }
+
+            const scriptContent = scriptEditor.value;
+            const userInfo = {
+                name: userNameInput.value,
+                email: userEmailInput.value,
+                phone: userPhoneInput.value
+            };
+
+            if (!scriptContent.trim()) {
+                showStatusMessage('Please write a script before submitting.', true);
+                return;
+            }
+
+            try {
+                // Save script and info to the user's private document
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId);
+                await setDoc(userDocRef, {
+                    script: {
+                        content: scriptContent,
+                        ...userInfo
+                    },
+                    timestamp: new Date()
+                }, { merge: true });
+
+                showStatusMessage('Script submitted successfully!');
+            } catch (error) {
+                console.error("Error submitting script:", error);
+                showStatusMessage('Submission failed. Please try again.', true);
+            }
+        };
+
+        // Event listeners
+        scriptEditor.addEventListener('input', updateLineNumbers);
+        scriptEditor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = scriptEditor.scrollTop;
+        });
+        submitButton.addEventListener('click', submitScript);
+
+        // Initialize on page load
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
