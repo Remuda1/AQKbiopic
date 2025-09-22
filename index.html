@@ -104,8 +104,8 @@
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setDoc, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables provided by the environment
         // NOTE: For local deployment, replace these values with your actual Firebase project config.
@@ -122,7 +122,7 @@
 
         let db;
         let auth;
-        let userId;
+        let userId = null; // Initialize userId to null
 
         const scriptEditor = document.getElementById('scriptEditor');
         const lineNumbers = document.getElementById('lineNumbers');
@@ -167,23 +167,36 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                await signInAnonymously(auth);
+                // Set the log level for debugging
+                setLogLevel('debug');
 
-                userId = auth.currentUser.uid;
-                
-                // Set up real-time listener for the user's previously submitted script
-                const userDocRef = doc(db, 'artifacts', appId, 'users', userId);
-                onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.script) {
-                             scriptEditor.value = data.script.content || '';
-                             userNameInput.value = data.script.name || '';
-                             userEmailInput.value = data.script.email || '';
-                             userPhoneInput.value = data.script.phone || '';
-                        }
+                // Listen for auth state changes to get the user ID
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log('User authenticated with ID:', userId);
+
+                        // Set up real-time listener for the user's previously submitted script
+                        const userDocRef = doc(db, 'artifacts', appId, 'users', userId);
+                        onSnapshot(userDocRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                const data = docSnap.data();
+                                if (data.script) {
+                                     scriptEditor.value = data.script.content || '';
+                                     userNameInput.value = data.script.name || '';
+                                     userEmailInput.value = data.script.email || '';
+                                     userPhoneInput.value = data.script.phone || '';
+                                }
+                            }
+                            updateLineNumbers();
+                        });
+                    } else {
+                        // Sign in anonymously if no user is found
+                        signInAnonymously(auth).catch((error) => {
+                            console.error("Anonymous sign-in failed:", error);
+                            showStatusMessage('Authentication failed.', true);
+                        });
                     }
-                    updateLineNumbers();
                 });
                 
             } catch (error) {
