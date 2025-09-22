@@ -108,8 +108,17 @@
         import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // NOTE: For local deployment, replace these values with your actual Firebase project config.
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0Z9HeA770o9twhSo3zSRlj1gAqZSHpKc",
+            authDomain: "aqkhanbiopic.firebaseapp.com",
+            projectId: "aqkhanbiopic",
+            storageBucket: "aqkhanbiopic.firebasestorage.app",
+            messagingSenderId: "1046754224729",
+            appId: "1:1046754224729:web:da13035c8d6414dcab1f48",
+            measurementId: "G-3FTJZM09KN"
+        };
+        const appId = firebaseConfig.projectId;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db;
