@@ -103,12 +103,12 @@
 
     <!-- Firebase Scripts -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, setDoc, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables provided by the environment
-        // NOTE: For local deployment, replace these values with your actual Firebase project config.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, setDoc, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC0Z9HeA770o9twhSo3zSRlj1gAqZSHpKc",
             authDomain: "aqkhanbiopic.firebaseapp.com",
@@ -123,6 +123,7 @@
         let db;
         let auth;
         let userId = null; // Initialize userId to null
+        let isAuthReady = false; // Add a state variable for auth readiness
 
         const scriptEditor = document.getElementById('scriptEditor');
         const lineNumbers = document.getElementById('lineNumbers');
@@ -164,6 +165,7 @@
         const initializeFirebase = async () => {
             try {
                 const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app); // Initialize analytics
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
@@ -174,6 +176,7 @@
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
+                        isAuthReady = true;
                         console.log('User authenticated with ID:', userId);
 
                         // Set up real-time listener for the user's previously submitted script
@@ -206,7 +209,7 @@
         };
 
         const submitScript = async () => {
-            if (!userId) {
+            if (!isAuthReady) {
                 showStatusMessage('App not ready. Please wait.', true);
                 return;
             }
