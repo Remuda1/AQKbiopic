@@ -2,11 +2,13 @@
 Soliciting scripts for a biopic about Abdul Qadeer Khan
 
 Script Editor & Biopic Submission Portal
+
 This is a simple, single-page web application that serves as a script editor and a submission portal for a biopic script. The project is designed to be easily hosted as a static website on platforms like GitHub Pages.
 
 The app is built with a minimalist design using Tailwind CSS and pure JavaScript, with Firebase Firestore handling the secure storage of user submissions.
 
 Features
+
 Live Script Editor: A clean, intuitive text area with automatically updating line numbers, perfect for drafting or pasting script content.
 
 User Information Form: Collects the submitter's name, email, and phone number.
@@ -16,6 +18,7 @@ Secure Data Storage: User scripts and information are securely saved to a privat
 Biopic-Specific Instructions: Provides clear guidance for writers on what to include in a script for a biopic about Dr. A. Q. Khan, including thematic considerations and basic screenwriting do's and don'ts.
 
 How It Works
+
 The website is a single index.html file that includes all HTML, CSS, and JavaScript.
 
 Frontend: The user interface is built with standard HTML and styled with the Tailwind CSS framework.
@@ -23,6 +26,7 @@ Frontend: The user interface is built with standard HTML and styled with the Tai
 Backend (Database): The application uses Firebase Authentication for anonymous sign-in and Firebase Firestore for a secure, cloud-based database. User submissions are written to a private document associated with their anonymous user ID.
 
 Project Setup
+
 To get this project running, you will need to:
 
 Set up a Firebase Project:
